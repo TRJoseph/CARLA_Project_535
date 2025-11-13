@@ -11,7 +11,7 @@ First make sure you are in your project directory.
 ## Check Python Version
 Run: `python --version`
 ## Create Virtual Environment
-This project uses python version 3.13, but should work with later releases.
+This project uses python version 3.12, but should work with later releases. 
 Run: `py -{version} -m venv .venv` where version is 3.13 or 3.12, etc.
 ## Activate Virtual Environment
 On Windows: 
@@ -24,3 +24,4 @@ Run: `pip install -r requirements.txt`
 Proceed to verify the installation by running: `pip list` and cross reference the requirements.txt file.
 
 # 4. Add the CARLA install folder to python environment variables.
+Add the `carla` and `carla/agents` as part of a new user variable (Absolute path to these directories). I called mine PYTHONPATH.
