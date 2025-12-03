@@ -21,7 +21,7 @@ class CarlaEnv:
 
     def connect_client(self, host='localhost', port=2000):
         client = carla.Client(host, port)
-        client.set_timeout(5.0)
+        client.set_timeout(10.0)
         return client
     
     def set_world_settings(self):
@@ -72,12 +72,14 @@ class CarlaEnv:
         #self.col_sensor.listen(lambda event: self.collision_data(event))
 
         #self.ego_vehicle.enable_autopilot()
-
+    
        
        
-       # self.ego_vehicle.set_vehicle_route(self.ego_vehicle.get_transform().location, self.world_spawn_points[self.config["simulation"]["ego_vehicle_target_point"]].location)
+        #self.ego_vehicle.set_vehicle_route(self.ego_vehicle.get_transform().location, self.world_spawn_points[self.config["simulation"]["ego_vehicle_target_point"]].location)
 
         # self.ego_vehicle.agent.draw_route_debug()
+
+        self.ego_vehicle.agent.set_destination(self.world_spawn_points[self.config["simulation"]["ego_vehicle_target_point"]].location)
     
     def get_actor_list(self) -> carla.ActorList:
         return self.world.get_actors()
@@ -85,7 +87,6 @@ class CarlaEnv:
     def step_forward(self):
         # applies the Vehicle's Agent run_step method
         self.ego_vehicle.step_vehicle()
-
         self.world.tick()
 
     def draw_world_spawn_points(self):

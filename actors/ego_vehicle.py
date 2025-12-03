@@ -3,7 +3,10 @@ import random
 import numpy as np
 
 from actors.vehicle import Vehicle
+
 from custom_agents.ego_agent import EgoAgent
+from agents.navigation.basic_agent import BasicAgent
+
 from kinematic_models.bicycle_model import BicycleModel
 from controllers.MPC import MPCController
 
@@ -21,7 +24,11 @@ class EgoVehicle(Vehicle):
 
         # different agents can impose different control schemas to the vehicle
         # the ego agent needs the vehicle actor and the controller to drive the vehicle
-        self.agent = EgoAgent(self, self.controller, self.model)
+        #self.agent = EgoAgent(self, self.controller, self.model)
+        self.agent = BasicAgent(self.actor, target_speed=20)
+        
+        self.agent.ignore_vehicles(True)
+        #self.agent.ignore_traffic_lights(True)
 
     def get_current_state(self):
         transform = self.get_transform()

@@ -22,7 +22,7 @@ def main():
         print("Simulation running... Press Ctrl+C to stop.")
 
         while True:
-            #time.sleep(0.1)
+            time.sleep(0.05)
             c_env.step_forward()
     except KeyboardInterrupt:
         print("Stopping simulation...")
