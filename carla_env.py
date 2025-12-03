@@ -69,13 +69,15 @@ class CarlaEnv:
         #self.actor_list.append(self.col_sensor)
 
         # TODO: take action on collision
-        self.col_sensor.listen(lambda event: self.collision_data(event))
+        #self.col_sensor.listen(lambda event: self.collision_data(event))
 
         #self.ego_vehicle.enable_autopilot()
 
-        self.ego_vehicle.set_vehicle_route(self.ego_vehicle.get_transform().location, self.world_spawn_points[self.config["simulation"]["ego_vehicle_target_point"]].location)
+       
+       
+       # self.ego_vehicle.set_vehicle_route(self.ego_vehicle.get_transform().location, self.world_spawn_points[self.config["simulation"]["ego_vehicle_target_point"]].location)
 
-        self.ego_vehicle.agent.draw_route_debug()
+        # self.ego_vehicle.agent.draw_route_debug()
     
     def get_actor_list(self) -> carla.ActorList:
         return self.world.get_actors()

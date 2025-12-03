@@ -4,7 +4,7 @@ simulation:
   use_camera: true
   synchronous_mode: true
   ego_vehicle_bp_id: 'vehicle.tesla.model3'
-  ego_vehicle_spawn_point: 12
+  ego_vehicle_spawn_point: 8
   ego_vehicle_target_point: 69
   rgb_camera_id: 'sensor.camera.rgb'
   collision_sensor_id: 'sensor.other.collision'
