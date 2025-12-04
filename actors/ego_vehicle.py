@@ -27,8 +27,8 @@ class EgoVehicle(Vehicle):
         #self.agent = EgoAgent(self, self.controller, self.model)
         self.agent = BasicAgent(self.actor, target_speed=20)
         
-        self.agent.ignore_vehicles(True)
-        #self.agent.ignore_traffic_lights(True)
+        self.agent.ignore_vehicles(False)
+        self.agent.ignore_traffic_lights(True)
 
     def get_current_state(self):
         transform = self.get_transform()
