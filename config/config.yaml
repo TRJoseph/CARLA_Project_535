@@ -8,6 +8,7 @@ simulation:
   ego_vehicle_target_point: 131
   rgb_camera_id: 'sensor.camera.rgb'
   collision_sensor_id: 'sensor.other.collision'
+  llm_model_path: "C:/Users/Yussef/Documents/AIModel/Meta-Llama-3.1-8B-Instruct-Q6_K_L.gguf"
   ego_vehicle_ap: false
   time_step: 0.05
 debug:

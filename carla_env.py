@@ -39,11 +39,42 @@ class CarlaEnv:
         self.blueprint_library = self.world.get_blueprint_library()
         self.map = self.world.get_map()
         self.world_spawn_points = self.map.get_spawn_points()
+        
+        llm_path = self.config["simulation"].get("llm_model_path", None)
+        
+        self.ego_vehicle = EgoVehicle(
+            self.world, 
+            self.config["simulation"]["ego_vehicle_bp_id"], 
+            self.world_spawn_points[self.config["simulation"]["ego_vehicle_spawn_point"]],
+            llm_path=llm_path
+        )
+        
+        # --- NEW CODE: SPAWN STATIONARY OBSTACLE ---
+        try:
+            # Pick a visible car model (e.g., a Tesla or Mini)
+            obstacle_bp = self.blueprint_library.find('vehicle.tesla.model3')
+            obstacle_bp.set_attribute('role_name', 'obstacle') # Optional tag
+
+            # Get Spawn Point 16
+            spawn_point_16 = self.world_spawn_points[16]
+
+            # Spawn the actor
+            self.obstacle_actor = self.world.try_spawn_actor(obstacle_bp, spawn_point_16)
+            
+            if self.obstacle_actor:
+                # CRITICAL: Apply Handbrake so it doesn't drift
+                control = carla.VehicleControl(hand_brake=True)
+                self.obstacle_actor.apply_control(control)
+                print(f"SUCCESS: Stationary obstacle spawned at Spawn Point 16.")
+            else:
+                print("WARNING: Could not spawn obstacle at Point 16 (Spot likely blocked).")
+
+        except Exception as e:
+            print(f"Error spawning obstacle: {e}")
+        # -------------------------------------------
+        
+        
         #self.waypoints = self.map.generate_waypoints(2)
-
-        # to change vehicle change config bp id
-        self.ego_vehicle = EgoVehicle(self.world, self.config["simulation"]["ego_vehicle_bp_id"], self.world_spawn_points[self.config["simulation"]["ego_vehicle_spawn_point"]])
-
         self.set_world_settings()
 
     def reset(self):
@@ -52,14 +83,14 @@ class CarlaEnv:
         transform = carla.Transform(carla.Location(x=2.5, z=0.7))
 
         # camera bp from config
-        self.rgb_cam = RGBCam(self.world, self.config["simulation"]["rgb_camera_id"], host_actor=self.ego_vehicle.actor, spawn_transform=transform)
-        self.rgb_cam.set_attribute("image_size_x", self.rgb_cam.IM_WIDTH)
-        self.rgb_cam.set_attribute("image_size_y", self.rgb_cam.IM_HEIGHT)
-        self.rgb_cam.spawn()
+        #self.rgb_cam = RGBCam(self.world, self.config["simulation"]["rgb_camera_id"], host_actor=self.ego_vehicle.actor, spawn_transform=transform)
+        #self.rgb_cam.set_attribute("image_size_x", self.rgb_cam.IM_WIDTH)
+        #self.rgb_cam.set_attribute("image_size_y", self.rgb_cam.IM_HEIGHT)
+        #self.rgb_cam.spawn()
         #self.actor_list.append(self.rgb_cam.actor)
 
         # tells camera sensor to start processing image data
-        self.rgb_cam.start_listening()
+        #self.rgb_cam.start_listening()
 
         self.ego_vehicle.apply_control(carla.VehicleControl(throttle=0.0, brake=0.0))
 

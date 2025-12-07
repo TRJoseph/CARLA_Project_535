@@ -12,7 +12,7 @@ from controllers.MPC import MPCController
 
 
 class EgoVehicle(Vehicle):
-    def __init__(self, world, bp=None, spawn_point=None):
+    def __init__(self, world, bp=None, spawn_point=None, llm_path=None):
         super().__init__(world, bp, spawn_point)
         super().spawn()
 
@@ -25,8 +25,10 @@ class EgoVehicle(Vehicle):
         # different agents can impose different control schemas to the vehicle
         # the ego agent needs the vehicle actor and the controller to drive the vehicle
         #self.agent = EgoAgent(self, self.controller, self.model)
-        self.agent = BasicAgent(self.actor, target_speed=20)
-        
+        #self.agent = BasicAgent(self.actor, target_speed=20)  
+        self.agent = EgoAgent(self.actor, model_path=llm_path, target_speed=20)
+        #self.agent = EgoAgent(self, self.controller, self.model, model_path=llm_path)    
+            
         self.agent.ignore_vehicles(True)
         #self.agent.ignore_traffic_lights(True)
 
