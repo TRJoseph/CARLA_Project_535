@@ -14,11 +14,6 @@ from custom_agents.ego_agent import EgoAgent
 
 class CarlaEnv:
 
-    def load_carla_config(self, config_path="config/config.yaml"):
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
-        return config
-
     def connect_client(self, host='localhost', port=2000):
         client = carla.Client(host, port)
         client.set_timeout(10.0)
@@ -30,8 +25,8 @@ class CarlaEnv:
         settings.fixed_delta_seconds = self.config["simulation"]["time_step"]
         self.world.apply_settings(settings)
 
-    def __init__(self):
-        self.config = self.load_carla_config()
+    def __init__(self, config):
+        self.config = config
 
         self.client = self.connect_client()
         self.client.load_world(self.config["world"])
