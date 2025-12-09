@@ -47,7 +47,7 @@ class CarlaEnv:
         # --- NEW CODE: SPAWN STATIONARY OBSTACLE ---
         try:
             # Pick a visible car model (e.g., a Tesla or Mini)
-            obstacle_bp = self.blueprint_library.find('vehicle.tesla.model3')
+            obstacle_bp = self.blueprint_library.find('vehicle.toyota.prius')
             obstacle_bp.set_attribute('role_name', 'obstacle') # Optional tag
 
             # Get Spawn Point 16

@@ -30,7 +30,7 @@ def get_world_obstacles(world, ego_actor, search_radius=30.0):
             heading_rad = math.radians(actor.get_transform().rotation.yaw)
         
         bbox = actor.bounding_box.extent
-        radius = math.sqrt(bbox.x**2 + bbox.y**2)
+        radius = bbox.x if bbox.x < bbox.y else bbox.y
 
         obstacles.append((
             actor.id,
@@ -90,7 +90,7 @@ class EgoAgent(BasicAgent):
                 self.llm = Llama(
                     model_path=model_path,
                     n_gpu_layers=-1, 
-                    n_ctx=8192,
+                    n_ctx=16384,
                     verbose=False
                 )
             except Exception as e:
@@ -127,7 +127,7 @@ class EgoAgent(BasicAgent):
 
         trigger = False
         threshold_meters = 1.0
-        dt = 0.5
+        dt = 0.05
 
         for obs in current_obstacles:
             obj_id, cx, cy, cv, ch, cr = obs
@@ -177,9 +177,9 @@ class EgoAgent(BasicAgent):
                 else:
                     left_info = "Overtaking Lane (Safe)"
             elif left_wp.lane_type == carla.LaneType.Shoulder:
-                left_info = "Shoulder"
+                left_info = "Shoulder  (Danger)"
             elif left_wp.lane_type == carla.LaneType.Sidewalk:
-                left_info = "Sidewalk"
+                left_info = "Sidewalk  (Danger)"
         
         # 2. Analyze Right Lane (Positive Y)
         right_info = "None (Barrier)"
@@ -190,7 +190,7 @@ class EgoAgent(BasicAgent):
                 else:
                     right_info = "Driving Lane (Safe)"
             elif right_wp.lane_type == carla.LaneType.Shoulder:
-                right_info = "Shoulder (Emergency Only)"
+                right_info = "Shoulder (Danger)"
             elif right_wp.lane_type == carla.LaneType.Sidewalk:
                 right_info = "Sidewalk"
 
@@ -206,7 +206,6 @@ class EgoAgent(BasicAgent):
     def consult_llm(self, local_obstacles, local_traj, lane_context):
         print(">>> PAUSING FOR LLM (BODY FRAME)...")
         
-        margin = 3.0 
 
         system_instruction = f"""You are a trajectory optimizer.
         
@@ -215,23 +214,30 @@ class EgoAgent(BasicAgent):
         - **Y**: **LEFT is NEGATIVE (-)**. **RIGHT is POSITIVE (+)**.
         - **Ego**: Starts at (0,0).
         
-        ### 2. MATH RULES
-        - If Target Y is POSITIVE, intermediate points MUST act like: 0 -> 0.5 -> 1.0 -> Target.
-        - If Target Y is NEGATIVE, intermediate points MUST act like: 0 -> -0.5 -> -1.0 -> Target.
+        INPUTS: 
+        - LANE CONTEXT: Information about lane boundaries and their safety.
+        - OBSTACLES: List of (X, Y, Velocity, Heading, Radius).
+        - CURRENT TRAJECTORY: List of (X, Y, Velocity, Heading).
         
         ### 3. REQUIRED REASONING STEPS
         Output a "Calculations" block before the final list:
-        A. Identify Closest Obstacle (X, Y).
-        B. Define Conflict Zone: [Obs_Y - {margin}, Obs_Y + {margin}].
-        C. **DECISION**: Pick "Target Y" outside the zone.
+        A. Identify the Obstacles, their velocity, and the direction they are moving.
+        B. Define Conflict Zones: determine every conflict zone (x, [Obs_Y - object radius, Obs_Y + object radius])
+        at every point x based on linear propogation of dynamics of obstacle
+        ONLY SWERVE IF YOU WILL COLIDE. in other words check if the current trajectory intersects with any conflict zone. 
+        If it doesn;t, keep the original trajectory.
+        C. **DECISION**: Pick "Target Y" outside the zone.ewe
            - Check Lane Context (Don't hit Oncoming/Left if possible).
            - IF Obs is Negative (Left), Swerve POSITIVE (Right).
-        D. **PATH CHECK**: 
-           - "I decided to swerve [DIRECTION]. Therefore, my Y values must be [SIGN]."
+           - IF you dont have to swerve (as determined based on IF YOU WILL COLLIDE OR NOT), keep going on the original trajectory
+           - Dont swerve too much. only change y enough so that you avoid collision
+           
         
         ### 4. OUTPUT
-        "FINAL_TRAJECTORY: ((x, y, v, h), ...)"
+        FINAL_TRAJECTORY: ((x, y, v, h), ...)
         (Generate 6 points. X should increase by ~2m-4m per point).
+        MUST USE PARENTHESES. have nothing else inside the
+        
         
         after you have done your calculations, go through the reasoning steps again to make sure it follows the requirements
 
@@ -243,6 +249,7 @@ class EgoAgent(BasicAgent):
         - Decision: Swerve Right to Y = +2.0.
         - Path Check: Swerve is Positive. Points must go 0 -> +2.0.
         FINAL_TRAJECTORY: ((5, 0.5, 5, 0.05), (10, 1.2, 5, 0.1), (15, 2.0, 5, 0), (20, 1.5, 5, -0.05), (25, 0, 5, 0))
+        
         """
 
         user_content = (
@@ -250,6 +257,8 @@ class EgoAgent(BasicAgent):
             f"OBSTACLES (x,y,v,h,r): {local_obstacles}\n"
             f"CURRENT TRAJECTORY (x,y,v,h): {local_traj}"
         )
+        
+        print(user_content)
 
         combined_prompt = f"{system_instruction}\n\nUSER DATA:\n{user_content}\n\nRESPONSE:"
         messages = [{"role": "user", "content": combined_prompt}]
@@ -257,16 +266,18 @@ class EgoAgent(BasicAgent):
         try:
             output = self.llm.create_chat_completion(
                 messages=messages, 
-                max_tokens=8192, 
+                max_tokens=16384, 
                 temperature=0.1,
                 top_p=0.9
             )
             response_text = output["choices"][0]["message"]["content"]
             print(f"[LLM REASONING]:\n{response_text}\n")
             
-            match = re.search(r"FINAL_TRAJECTORY:\s*(\(\(.*\)\))", response_text, re.DOTALL)
+            clean_text = response_text.replace("```python", "").replace("```", "").strip()
+            
+            match = re.search(r"FINAL_TRAJECTORY:\s*(\(\(.*\)\))", clean_text, re.DOTALL)
             if not match: 
-                match = re.search(r"(\(\(.*\)\))", response_text, re.DOTALL)
+                match = re.search(r"(\(\(.*\)\))", clean_text, re.DOTALL)
             
             if match:
                 traj_str = match.group(1)
@@ -297,7 +308,8 @@ class EgoAgent(BasicAgent):
                     w_loc = carla.Location(x=o[1], y=o[2])
                     b_x, b_y = self._world_to_body(ego_trans, w_loc)
                     b_h = o[4] - math.radians(ego_trans.rotation.yaw)
-                    body_obstacles.append((round(b_x, 2), round(b_y, 2), o[3], round(b_h, 2), o[5]))
+                    if(b_x >0.0):
+                        body_obstacles.append((round(b_x, 2), round(b_y, 2), o[3], round(b_h, 2), o[5]))
                 
                 body_traj = []
                 for wp, _ in queue:
