@@ -1,5 +1,5 @@
 simulation:
   npc_vehicle_ap: true
-  num_vehicles: 1
+  num_vehicles: 20
   ego_vehicle_spawn_point: 8
   ego_vehicle_target_point: 131

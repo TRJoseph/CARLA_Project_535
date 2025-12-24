@@ -4,8 +4,9 @@ simulation:
   use_camera: true
   ego_vehicle_bp_id: 'vehicle.tesla.model3'
   rgb_camera_id: 'sensor.camera.rgb'
+  sem_camera_id: 'sensor.camera.semantic_segmentation'
   collision_sensor_id: 'sensor.other.collision'
-  llm_model_path: "C:/Users/Yussef/Documents/AIModel/Meta-Llama-3.1-8B-Instruct-Q6_K_L.gguf"
+  llm_model_path: "C:/Users/josep/Projects/CARLA_Project_535/models/Meta-Llama-3.1-8B-Instruct-Q6_K_L.gguf"
   ego_vehicle_ap: false
   time_step: 0.05
 

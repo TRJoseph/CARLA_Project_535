@@ -7,9 +7,6 @@ from core.cleanup import cleanup as clu
 
 from actors.vehicle import Vehicle
 from actors.ego_vehicle import EgoVehicle
-
-from actors.rgbcam import RGBCam
-
 from custom_agents.ego_agent import EgoAgent
 
 class CarlaEnv:
@@ -39,34 +36,35 @@ class CarlaEnv:
         
         self.ego_vehicle = EgoVehicle(
             self.world, 
+            self.config,
             self.config["simulation"]["ego_vehicle_bp_id"], 
             self.world_spawn_points[self.config["simulation"]["ego_vehicle_spawn_point"]],
             llm_path=llm_path
         )
         
-        # --- NEW CODE: SPAWN STATIONARY OBSTACLE ---
-        try:
-            # Pick a visible car model (e.g., a Tesla or Mini)
-            obstacle_bp = self.blueprint_library.find('vehicle.toyota.prius')
-            obstacle_bp.set_attribute('role_name', 'obstacle') # Optional tag
+        # # --- NEW CODE: SPAWN STATIONARY OBSTACLE ---
+        # try:
+        #     # Pick a visible car model (e.g., a Tesla or Mini)
+        #     obstacle_bp = self.blueprint_library.find('vehicle.toyota.prius')
+        #     obstacle_bp.set_attribute('role_name', 'obstacle') # Optional tag
 
-            # Get Spawn Point 16
-            spawn_point_16 = self.world_spawn_points[16]
+        #     # Get Spawn Point 16
+        #     spawn_point_16 = self.world_spawn_points[16]
 
-            # Spawn the actor
-            self.obstacle_actor = self.world.try_spawn_actor(obstacle_bp, spawn_point_16)
+        #     # Spawn the actor
+        #     self.obstacle_actor = self.world.try_spawn_actor(obstacle_bp, spawn_point_16)
             
-            if self.obstacle_actor:
-                # CRITICAL: Apply Handbrake so it doesn't drift
-                control = carla.VehicleControl(hand_brake=True)
-                self.obstacle_actor.apply_control(control)
-                print(f"SUCCESS: Stationary obstacle spawned at Spawn Point 16.")
-            else:
-                print("WARNING: Could not spawn obstacle at Point 16 (Spot likely blocked).")
+        #     if self.obstacle_actor:
+        #         # CRITICAL: Apply Handbrake so it doesn't drift
+        #         control = carla.VehicleControl(hand_brake=True)
+        #         self.obstacle_actor.apply_control(control)
+        #         print(f"SUCCESS: Stationary obstacle spawned at Spawn Point 16.")
+        #     else:
+        #         print("WARNING: Could not spawn obstacle at Point 16 (Spot likely blocked).")
 
-        except Exception as e:
-            print(f"Error spawning obstacle: {e}")
-        # -------------------------------------------
+        # except Exception as e:
+        #     print(f"Error spawning obstacle: {e}")
+        # # -------------------------------------------
         
         
         #self.waypoints = self.map.generate_waypoints(2)
@@ -76,6 +74,8 @@ class CarlaEnv:
         self.collision_hist = []
 
         transform = carla.Transform(carla.Location(x=2.5, z=0.7))
+
+        self.ego_vehicle.setup_sensor_stack(collecting_data=True)
 
         # camera bp from config
         #self.rgb_cam = RGBCam(self.world, self.config["simulation"]["rgb_camera_id"], host_actor=self.ego_vehicle.actor, spawn_transform=transform)
@@ -105,7 +105,7 @@ class CarlaEnv:
 
         # self.ego_vehicle.agent.draw_route_debug()
 
-        self.ego_vehicle.agent.set_destination(self.world_spawn_points[self.config["simulation"]["ego_vehicle_target_point"]].location)
+        #self.ego_vehicle.agent.set_destination(self.world_spawn_points[self.config["simulation"]["ego_vehicle_target_point"]].location)
     
     def get_actor_list(self) -> carla.ActorList:
         return self.world.get_actors()

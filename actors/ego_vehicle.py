@@ -3,19 +3,22 @@ import random
 import numpy as np
 
 from actors.vehicle import Vehicle
+from actors.sensors.rgbcam import RGBCam
 
 from custom_agents.ego_agent import EgoAgent
 from agents.navigation.basic_agent import BasicAgent
+from custom_agents.ego_agent_nollm import EgoAgentNoLLM
 
 from kinematic_models.bicycle_model import BicycleModel
 from controllers.MPC import MPCController
 
 
 class EgoVehicle(Vehicle):
-    def __init__(self, world, bp=None, spawn_point=None, llm_path=None):
+    def __init__(self, world, environment_config, bp=None, spawn_point=None, llm_path=None):
         super().__init__(world, bp, spawn_point)
         super().spawn()
 
+        self.environment_config = environment_config
         self.physics = self.get_vehicle_physics()
         self.model_params = self.compute_model_params()
 
@@ -26,11 +29,29 @@ class EgoVehicle(Vehicle):
         # the ego agent needs the vehicle actor and the controller to drive the vehicle
         #self.agent = EgoAgent(self, self.controller, self.model)
         #self.agent = BasicAgent(self.actor, target_speed=20)  
-        self.agent = EgoAgent(self.actor, model_path=llm_path, target_speed=20)
+        self.agent = EgoAgentNoLLM(self, self.controller, self.model)
+        #self.agent = EgoAgent(self.actor, model_path=llm_path, target_speed=20)
         #self.agent = EgoAgent(self, self.controller, self.model, model_path=llm_path)    
             
-        self.agent.ignore_vehicles(True)
+        self.agent.ignore_vehicles(False)
         #self.agent.ignore_traffic_lights(True)
+
+    
+    def setup_sensor_stack(self, collecting_data=False):
+
+        rgb_sensor_transform = carla.Transform(carla.Location(x=2.5, z=0.7))
+
+        # camera bp from config
+        self.rgb_cam = RGBCam(self.world, self.environment_config["simulation"]["rgb_camera_id"], host_actor=self.ego_vehicle.actor, spawn_transform=rgb_sensor_transform)
+        self.rgb_cam.set_attribute("image_size_x", self.rgb_cam.IM_WIDTH)
+        self.rgb_cam.set_attribute("image_size_y", self.rgb_cam.IM_HEIGHT)
+        self.rgb_cam.spawn()
+        self.actor_list.append(self.rgb_cam.actor)
+
+
+
+        #self.rgb_cam.start_listening()
+
 
     def get_current_state(self):
         transform = self.get_transform()
